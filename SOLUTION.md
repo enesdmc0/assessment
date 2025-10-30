@@ -1,7 +1,7 @@
 # Technical Assessment Solution
 
 **Candidate Name**: Enes Demirci
-**Date**: October 30, 2024
+**Date**: October 30, 2025
 **Time Spent**: 3.5 hours
 
 ---
@@ -27,7 +27,7 @@ All issues fixed and tested. App stable now.
 
 **Severity**: Critical
 **Category**: Architecture
-**Location**: `server/context.ts:10`
+**Location**: `server/context.ts`
 
 **Description**:
 Context function used Pages Router adapter (`CreateNextContextOptions`) but app uses App Router with fetch adapter. Headers API is different between them. Result: all API requests got 401 even with valid tokens.
@@ -50,7 +50,7 @@ None. This is the correct adapter for App Router. Previous code was fundamentall
 
 **Severity**: Critical
 **Category**: Memory / Performance
-**Location**: `server/context.ts:30-31`
+**Location**: `server/context.ts`
 
 **Description**:
 Every tRPC request creates new `AIService` and `QueueService` instances. `QueueService` constructor starts a `setInterval` that polls database every second. These intervals never get cleaned up. After 100 requests, 100 intervals run simultaneously, hammering the database.
@@ -73,7 +73,7 @@ Services now shared across requests, but saves massive memory. Worth it.
 
 **Severity**: Medium
 **Category**: Performance / Architecture
-**Location**: `services/queue-service.ts:47-50`
+**Location**: `services/queue-service.ts`
 
 **Description**:
 QueueService polls database every second regardless of whether jobs exist. Fixed 1-second interval even when queue is empty. Results in constant database queries visible in development logs.
@@ -96,7 +96,7 @@ Message queue adds more infrastructure. Longer intervals mean slower job process
 
 **Severity**: Critical
 **Category**: Memory / Client-Side
-**Location**: `lib/hooks/useGenerationPolling.ts:80-83`
+**Location**: `lib/hooks/useGenerationPolling.ts`
 
 **Description**:
 Custom hook `useGenerationPolling` starts interval with `setInterval` but cleanup function doesn't call `clearInterval`. Also adds window event listener without removing it. When component unmounts, intervals and listeners remain active indefinitely.
@@ -119,7 +119,7 @@ None. This is a bug fix with no downsides. Cleanup is essential for React effect
 
 **Severity**: High
 **Category**: Memory / Client-Side
-**Location**: `components/ProjectDashboard.tsx:61-74`
+**Location**: `components/ProjectDashboard.tsx`
 
 **Description**:
 Component creates WebSocket connection in useEffect but never closes it. No cleanup function provided. WebSocket remains open even after component unmounts. Each time user navigates to dashboard, new connection opens while old ones stay alive.
@@ -142,7 +142,7 @@ None. Proper resource cleanup is mandatory for WebSocket connections. No downsid
 
 **Severity**: High
 **Category**: Performance / Database
-**Location**: `server/routers/project.ts:26-49`
+**Location**: `server/routers/project.ts`
 
 **Description**:
 Project list endpoint fetches projects then loops through each one making additional queries for component count, latest generation, and user info. For 20 projects this creates 61 database queries (1 initial + 20×3 additional). Classic N+1 query problem.
