@@ -37,21 +37,49 @@ None. This is the correct adapter for App Router. Previous code was fundamentall
 
 ---
 
-### Issue #2: [Title]
+### Issue #2: Memory Leak from Service Instantiation
 
-**Severity**:
-**Category**:
-**Location**:
+**Severity**: Critical
+**Category**: Memory / Performance
+**Location**: `server/context.ts:30-31`
 
 **Description**:
+Every tRPC request creates new `AIService` and `QueueService` instances. `QueueService` constructor starts a `setInterval` that polls database every second. These intervals never get cleaned up. After 100 requests, 100 intervals run simultaneously, hammering the database.
 
 **Impact**:
+Memory usage grows continuously. Database gets overloaded with redundant queries. Server eventually crashes under normal load. Development logs flooded with query spam. Connection pool exhaustion.
 
 **Root Cause**:
+Context creation function runs per-request but treats stateful services like request-scoped objects. `QueueService` starts background polling in constructor without cleanup mechanism. Each abandoned instance keeps its interval running indefinitely.
 
 **Solution**:
+Implement singleton pattern for services. Create single instances on server startup, reuse across all requests. Store in module-level variables outside context function. Add cleanup on server shutdown if needed.
 
 **Trade-offs**:
+Services now shared across requests - must ensure thread safety. Cache behavior changes (shared vs per-request). Slightly more complex initialization logic but massive memory savings.
+
+---
+
+### Issue #3: Inefficient Queue Polling Strategy
+
+**Severity**: Medium
+**Category**: Performance / Architecture
+**Location**: `services/queue-service.ts:47-50`
+
+**Description**:
+QueueService polls database every second regardless of whether jobs exist. Uses fixed 1-second interval even when queue is empty. No backoff strategy or event-driven approach. Results in constant database load visible in development logs.
+
+**Impact**:
+Unnecessary database queries waste resources. In production with multiple instances, polling becomes expensive at scale. Connection pool pressure from frequent queries. Higher cloud costs for database operations that return nothing.
+
+**Root Cause**:
+Simple setInterval polling chosen for background job processing. No consideration for idle periods or job arrival patterns. Common anti-pattern in queue systems - polling instead of push notifications or exponential backoff.
+
+**Solution**:
+Options: (1) Event-driven architecture using database triggers or message queue, (2) Exponential backoff when no jobs found, (3) Longer base interval (5-10s instead of 1s), (4) Disable polling in environments without background jobs. For this assessment, current approach acceptable since singleton fixed the memory leak - optimization can be deferred.
+
+**Trade-offs**:
+Event-driven adds complexity and infrastructure dependencies. Longer intervals increase job latency. Exponential backoff needs tuning. Current approach is simple and works for low-medium scale. Real fix depends on production requirements.
 
 ---
 

@@ -7,6 +7,25 @@ import prisma from '../lib/prisma'
 import { AIService } from '../services/ai-service'
 import { QueueService } from '../services/queue-service'
 
+// Singleton instances - created once and reused across all requests
+// Prevents memory leaks from creating new services with setInterval on each request
+let aiServiceInstance: AIService | null = null
+let queueServiceInstance: QueueService | null = null
+
+function getAIService(): AIService {
+  if (!aiServiceInstance) {
+    aiServiceInstance = new AIService()
+  }
+  return aiServiceInstance
+}
+
+function getQueueService(): QueueService {
+  if (!queueServiceInstance) {
+    queueServiceInstance = new QueueService()
+  }
+  return queueServiceInstance
+}
+
 export async function createContext(opts: FetchCreateContextFnOptions) {
   const { req } = opts
 
@@ -27,9 +46,9 @@ export async function createContext(opts: FetchCreateContextFnOptions) {
     }
   }
 
-  // Initialize services for this request
-  const aiService = new AIService()
-  const queueService = new QueueService()
+  // Use singleton instances instead of creating new ones each request
+  const aiService = getAIService()
+  const queueService = getQueueService()
 
   return {
     req,
