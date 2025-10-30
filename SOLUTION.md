@@ -83,6 +83,29 @@ Event-driven adds complexity and infrastructure dependencies. Longer intervals i
 
 ---
 
+### Issue #4: React Hook Memory Leak - Missing Cleanup
+
+**Severity**: Critical
+**Category**: Memory / Client-Side
+**Location**: `lib/hooks/useGenerationPolling.ts:80-83`
+
+**Description**:
+Custom hook `useGenerationPolling` starts interval with `setInterval` but cleanup function doesn't call `clearInterval`. Also adds window event listener without removing it. When component unmounts, intervals and listeners remain active indefinitely.
+
+**Impact**:
+Client-side memory leak in user browsers. Each time user navigates to/from page with this hook, new interval starts but old ones never stop. After 10 page visits, 10 intervals running simultaneously. Browser slows down, excessive API calls, poor user experience.
+
+**Root Cause**:
+Cleanup function exists but incomplete. Developer added console.log for debugging but forgot actual cleanup. Common mistake in React hooks - forgetting `clearInterval` or `removeEventListener` in return statement.
+
+**Solution**:
+Add `clearInterval(intervalId)` in cleanup function. Store event listener reference and remove with `window.removeEventListener` on cleanup. Ensure all side effects properly cleaned up when component unmounts.
+
+**Trade-offs**:
+None. This is a bug fix with no downsides. Cleanup is essential for React effects with subscriptions.
+
+---
+
 [Continue for all issues found...]
 
 ---
