@@ -72,7 +72,6 @@ export default function ProjectDashboard({ projectId }: ProjectDashboardProps) {
 			console.error("WebSocket error:", error);
 		};
 
-		// Cleanup: close WebSocket when component unmounts
 		return () => {
 			ws.close();
 		};

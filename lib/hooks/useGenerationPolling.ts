@@ -77,7 +77,6 @@ export function useGenerationPolling({
 		// Initial check
 		checkStatus();
 
-		// Cleanup: stop interval when component unmounts
 		return () => {
 			clearInterval(intervalId);
 		};
@@ -99,7 +98,6 @@ export function useGenerationPolling({
 		// Add event listener for debugging
 		window.addEventListener("focus", logState);
 
-		// Cleanup: remove event listener when component unmounts
 		return () => {
 			window.removeEventListener("focus", logState);
 		};

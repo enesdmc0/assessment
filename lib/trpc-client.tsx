@@ -38,7 +38,6 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
 					url: `${getBaseUrl()}/api/trpc`,
 					transformer: superjson,
 					headers() {
-						// Read token dynamically on each request, not just on mount
 						const token =
 							typeof window !== "undefined"
 								? localStorage.getItem("auth_token") || ""

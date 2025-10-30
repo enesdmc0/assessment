@@ -15,8 +15,7 @@ export const projectRouter = router({
 			}),
 		)
 		.query(async ({ ctx, input }) => {
-			// Use include and _count to fetch related data in single query
-			// Fixes N+1 problem: was 1 + (n * 3) queries, now just 1 query
+			// Fetch related data with include to avoid multiple queries
 			const projects = await ctx.prisma.project.findMany({
 				where: { userId: ctx.user.id },
 				take: input.limit,
@@ -38,7 +37,7 @@ export const projectRouter = router({
 				...project,
 				componentCount: project._count.components,
 				latestGeneration: project.generations[0] || null,
-				userName: ctx.user.name, // Use user from context instead of querying again
+				userName: ctx.user.name,
 			}));
 		}),
 
