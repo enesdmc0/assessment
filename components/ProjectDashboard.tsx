@@ -71,6 +71,11 @@ export default function ProjectDashboard({ projectId }: ProjectDashboardProps) {
 		ws.onerror = (error) => {
 			console.error("WebSocket error:", error);
 		};
+
+		// Cleanup: close WebSocket when component unmounts
+		return () => {
+			ws.close();
+		};
 	}, [projectId]);
 
 	// Calculate filtered generations

@@ -106,6 +106,29 @@ None. This is a bug fix with no downsides. Cleanup is essential for React effect
 
 ---
 
+### Issue #5: WebSocket Memory Leak - Missing Cleanup
+
+**Severity**: High
+**Category**: Memory / Client-Side
+**Location**: `components/ProjectDashboard.tsx:61-74`
+
+**Description**:
+Component creates WebSocket connection in useEffect but never closes it. No cleanup function provided. WebSocket remains open even after component unmounts. Each time user navigates to dashboard, new connection opens while old ones stay alive.
+
+**Impact**:
+Accumulating WebSocket connections waste client resources and server connections. Browser maintains multiple active sockets unnecessarily. Server socket pool exhaustion possible with many users. Network traffic continues for unmounted components.
+
+**Root Cause**:
+Developer started WebSocket connection but forgot cleanup. Common pattern in React - side effects need cleanup. WebSocket has `.close()` method that should be called on unmount.
+
+**Solution**:
+Add cleanup function that calls `ws.close()`. Store WebSocket reference and close it when component unmounts or projectId changes. Ensures one connection per mounted component.
+
+**Trade-offs**:
+None. Proper resource cleanup is mandatory for WebSocket connections. No downside to closing connections when component unmounts.
+
+---
+
 [Continue for all issues found...]
 
 ---
