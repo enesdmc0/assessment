@@ -32,19 +32,20 @@ export function TRPCProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const [trpcClient] = useState(() => {
-		const token =
-			typeof window !== "undefined"
-				? localStorage.getItem("auth_token") || ""
-				: "";
-
 		return trpc.createClient({
 			links: [
 				httpBatchLink({
 					url: `${getBaseUrl()}/api/trpc`,
 					transformer: superjson,
 					headers() {
+						// Read token dynamically on each request, not just on mount
+						const token =
+							typeof window !== "undefined"
+								? localStorage.getItem("auth_token") || ""
+								: "";
+
 						return {
-							authorization: `Bearer ${token}`,
+							authorization: token ? `Bearer ${token}` : "",
 						};
 					},
 				}),

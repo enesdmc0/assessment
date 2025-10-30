@@ -1,55 +1,39 @@
 # Technical Assessment Solution
 
-**Candidate Name**: _________________________
-**Date**: _________________________
-**Time Spent**: _________ hours
+**Candidate Name**: Enes Demirci
+**Date**: October 30, 2024
+**Time Spent**: In Progress
 
 ---
 
 ## Executive Summary
 
-Provide a brief overview (3-5 sentences) of the main issues you found and your overall assessment of the codebase.
-
-```
-[Your summary here]
-```
+Found several critical issues causing production instability. Main problems: memory leaks from service instantiation, wrong tRPC adapter blocking authentication, N+1 queries killing database performance, and missing cleanup in React components. Fixed authentication blocker and working through memory leaks. These issues would crash the app under load.
 
 ---
 
 ## Part 1: Issues Found & Fixed
 
-For each significant issue you found, document it using this format:
+### Issue #1: Wrong tRPC Adapter Breaking Authentication
 
-### Issue #1: [Title]
-
-**Severity**: Critical / High / Medium
-**Category**: Performance / Memory / Concurrency / Security / Architecture
-**Location**: `path/to/file.ts:approx-line-number`
+**Severity**: Critical
+**Category**: Architecture
+**Location**: `server/context.ts:10`
 
 **Description**:
-```
-[What is the issue?]
-```
+Context function used Pages Router adapter (`CreateNextContextOptions`) but app uses App Router with fetch adapter. Headers API is different between them. Result: all API requests got 401 even with valid tokens.
 
 **Impact**:
-```
-[How does this affect the application in production?]
-```
+App completely unusable. No authenticated requests work. Users can't create projects, view data, or use any feature. Database operations fail silently.
 
 **Root Cause**:
-```
-[Why does this happen? What's the underlying problem?]
-```
+Next.js 15 App Router uses `fetchRequestHandler` with Web standard Request object (Headers API). Old code expected Next.js-specific request format from Pages Router. `req.headers.authorization` returns undefined because headers are accessed via `.get()` method in fetch adapter.
 
 **Solution**:
-```
-[How did you fix it? What approach did you take?]
-```
+Changed context adapter from `CreateNextContextOptions` to `FetchCreateContextFnOptions`. Updated header access from `req.headers.authorization` to `req.headers.get('authorization')`. Also updated client to read token dynamically on each request instead of only at mount.
 
 **Trade-offs**:
-```
-[Are there any downsides to your solution? Alternative approaches?]
-```
+None. This is the correct adapter for App Router. Previous code was fundamentally incompatible with the routing system being used.
 
 ---
 
