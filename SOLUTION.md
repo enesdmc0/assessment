@@ -129,6 +129,29 @@ None. Proper resource cleanup is mandatory for WebSocket connections. No downsid
 
 ---
 
+### Issue #6: N+1 Query Problem - Project List
+
+**Severity**: High
+**Category**: Performance / Database
+**Location**: `server/routers/project.ts:26-49`
+
+**Description**:
+Project list endpoint fetches projects then loops through each one making additional queries for component count, latest generation, and user info. For 20 projects this creates 61 database queries (1 initial + 20×3 additional). Classic N+1 query problem.
+
+**Impact**:
+Slow response times as project count grows. Database overload with redundant queries. Poor scalability - 100 projects means 301 queries. Increased latency for users. Higher database costs in production.
+
+**Root Cause**:
+Using Promise.all with map to fetch related data sequentially per project. Not leveraging Prisma's relational query capabilities. User data already available in context but queried again unnecessarily for each project.
+
+**Solution**:
+Use Prisma's `include` for relations and `_count` for aggregates in single query. Remove redundant user query since context already has user data. Reduces 61 queries to 1 efficient query with joins.
+
+**Trade-offs**:
+None significant. Prisma's include/count designed for this. Single query with joins more efficient than multiple round-trips. May return slightly more data but network savings from fewer queries outweigh this.
+
+---
+
 [Continue for all issues found...]
 
 ---

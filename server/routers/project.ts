@@ -15,41 +15,31 @@ export const projectRouter = router({
 			}),
 		)
 		.query(async ({ ctx, input }) => {
+			// Use include and _count to fetch related data in single query
+			// Fixes N+1 problem: was 1 + (n * 3) queries, now just 1 query
 			const projects = await ctx.prisma.project.findMany({
 				where: { userId: ctx.user.id },
 				take: input.limit,
 				skip: input.offset,
 				orderBy: { createdAt: "desc" },
+				include: {
+					_count: {
+						select: { components: true },
+					},
+					generations: {
+						take: 1,
+						orderBy: { createdAt: "desc" },
+					},
+				},
 			});
 
-			// Get component counts and latest generation for each project
-			const projectsWithDetails = await Promise.all(
-				projects.map(async (project) => {
-					const componentCount = await ctx.prisma.component.count({
-						where: { projectId: project.id },
-					});
-
-					const latestGeneration =
-						await ctx.prisma.generation.findFirst({
-							where: { projectId: project.id },
-							orderBy: { createdAt: "desc" },
-						});
-
-					// Get user info again even though we already have it
-					const user = await ctx.prisma.user.findUnique({
-						where: { id: project.userId },
-					});
-
-					return {
-						...project,
-						componentCount,
-						latestGeneration,
-						userName: user?.name,
-					};
-				}),
-			);
-
-			return projectsWithDetails;
+			// Map to expected format with componentCount and latestGeneration
+			return projects.map((project) => ({
+				...project,
+				componentCount: project._count.components,
+				latestGeneration: project.generations[0] || null,
+				userName: ctx.user.name, // Use user from context instead of querying again
+			}));
 		}),
 
 	// Get a single project by ID
